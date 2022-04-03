@@ -6,7 +6,7 @@ import os
 import re
 import time
 
-from PIL import Image
+from PIL import Image, ImageOps
 from pydantic import BaseModel
 import click
 import pyautogui as pag
@@ -41,6 +41,11 @@ def cleanup(s: str) -> str:
     return re.sub(r'''\W+''', ' ', s)
 
 
+def crop_image(image: Any) -> Any:
+    inverted_image = ImageOps.invert(image)
+    return image.crop(inverted_image.getbbox())
+
+
 class App(BaseModel):
     next_button: Tuple[int, int]
     region: Tuple[int, int, int, int]
@@ -65,6 +70,7 @@ class App(BaseModel):
                     print('', file=f)
 
             screenshot.save(destination / f'{n:04d}.png')
+            crop_image(screenshot).save(destination / f'{n:04d}.cropped.png')
             last_text = text
             print(f'  → {cleanup(text)[0:40]}')
             pag.click(*self.next_button, 1)
