@@ -14,7 +14,7 @@ import pyocr
 import pyocr.builders
 
 
-def countdown(action_name: str, n: int = 3) -> None:
+def countdown(action_name: str, n: int = 6) -> None:
     print(f'Countdown to {action_name}')
     for i in range(n, 0, -1):
         print(i)
@@ -83,6 +83,10 @@ def main(destination: Path) -> None:
 
     countdown('Get the position of the button to go next page')
     next_button = pag.position()
+
+    input('Press enter to start')
+
+    countdown('Start')
 
     app = App(
         ocr=get_ocr_tool(),
