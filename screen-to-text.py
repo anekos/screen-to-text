@@ -52,6 +52,7 @@ class App(BaseModel):
     ocr: Any
     builder: Any
     interval: int
+    minimum_pages: int
 
     def start(self, destination: Path) -> None:
         os.makedirs(destination, exist_ok=True)
@@ -60,7 +61,7 @@ class App(BaseModel):
         while True:
             screenshot = pag.screenshot(region=self.region)
             text = self.ocr.image_to_string(screenshot, lang='eng', builder=self.builder)
-            if last_text == text:
+            if last_text == text and self.minimum_pages < n:
                 break
 
             with open(destination / f'{n:04d}.txt', 'w') as f:
@@ -80,7 +81,8 @@ class App(BaseModel):
 
 @click.command()
 @click.argument('destination', type=click.Path(exists=False, dir_okay=True))
-def main(destination: Path) -> None:
+@click.option('--minimum-pages', type=int, default=10)
+def main(destination: Path, minimum_pages: int) -> None:
     countdown('Get the top left of region')
     left, top = pag.position()
 
@@ -99,7 +101,8 @@ def main(destination: Path) -> None:
         builder=pyocr.builders.TextBuilder(),
         next_button=next_button,
         region=(left, top, right - left, bottom - top),
-        interval=1
+        interval=1,
+        minimum_pages=minimum_pages
     )
     app.start(Path(destination))
 
