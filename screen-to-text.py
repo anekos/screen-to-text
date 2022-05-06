@@ -13,6 +13,10 @@ import pyautogui as pag
 import pyocr
 import pyocr.builders
 
+local_tessdata = Path(os.path.expanduser('~/.local/share/tessdata'))
+if local_tessdata.is_dir():
+    os.environ['TESSDATA_PREFIX'] = str(local_tessdata)
+
 
 def countdown(action_name: str, n: int = 6) -> None:
     print(f'Countdown to {action_name}')
