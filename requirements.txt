@@ -1,4 +1,5 @@
 click
+pdf2image
 pyautogui
-pyocr
 pydantic
+pyocr

@@ -1,7 +1,7 @@
 from dataclasses import InitVar
 from pathlib import Path
 from random import random
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 import os
 import re
 import time
@@ -12,6 +12,11 @@ import click
 import pyautogui as pag
 import pyocr
 import pyocr.builders
+
+from cropper import Cropper
+
+# https://gitlab.gnome.org/World/OpenPaperwork/pyocr
+# https://child-programmer.com/ai/ocr/python/japanese-vertical/
 
 local_tessdata = Path(os.path.expanduser('~/.local/share/tessdata'))
 if local_tessdata.is_dir():
@@ -50,7 +55,7 @@ def crop_image(image: Any) -> Any:
     return image.crop(inverted_image.getbbox())
 
 
-class App(BaseModel):
+class Kindle(BaseModel):
     next_button: Tuple[int, int]
     region: Tuple[int, int, int, int]
     ocr: Any
@@ -83,10 +88,15 @@ class App(BaseModel):
             n += 1
 
 
-@click.command()
+@click.group()
+def main() -> None:
+    pass
+
+
+@main.command()
 @click.argument('destination', type=click.Path(exists=False, dir_okay=True))
 @click.option('--minimum-pages', type=int, default=10)
-def main(destination: Path, minimum_pages: int) -> None:
+def kindle(destination: Path, minimum_pages: int) -> None:
     countdown('Get the top left of region')
     left, top = pag.position()
 
@@ -100,7 +110,7 @@ def main(destination: Path, minimum_pages: int) -> None:
 
     countdown('Start')
 
-    app = App(
+    app = Kindle(
         ocr=get_ocr_tool(),
         builder=pyocr.builders.TextBuilder(),
         next_button=next_button,
@@ -109,6 +119,39 @@ def main(destination: Path, minimum_pages: int) -> None:
         minimum_pages=minimum_pages
     )
     app.start(Path(destination))
+
+
+@main.command()
+@click.argument('image_file', type=click.Path(exists=False, dir_okay=True))
+@click.option('--lang', type=str, default='eng')
+@click.option('--vertical', type=bool, default=False, is_flag=True)
+@click.option('--chapter', type=str, default=None)
+def from_file(image_file: Path, lang: str, vertical: bool, chapter: Optional[str] = None) -> None:
+    ocr = get_ocr_tool()
+    source = Image.open(image_file)
+
+    options = {}
+    if vertical:
+        options['tesseract_layout'] = 5
+
+    cropper = Cropper(image=source, ocr=ocr)
+    cropper.remove_page_number(position='bottom')
+    if chapter is not None:
+        cropper.remove_chapter_title(position=chapter)
+
+    source = cropper.image
+    # source.save('/tmp/xmosh/cropped.png')
+
+    builder = pyocr.builders.TextBuilder(**options)
+    text = ocr.image_to_string(source, lang=lang, builder=builder)
+    print(text)
+
+
+@main.command()
+def languages() -> None:
+    ocr = get_ocr_tool()
+    ls = ocr.get_available_languages()
+    print(ls)
 
 
 if __name__ == '__main__':
