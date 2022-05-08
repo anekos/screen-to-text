@@ -5,13 +5,14 @@ import os
 import re
 
 from PIL import Image, ImageOps
+from pdf2image import convert_from_path
 from pydantic import BaseModel
 import click
 import pyocr
 import pyocr.builders
 
-from cropper import Cropper
 from kindle import Kindle
+from image import FromImage
 
 # https://gitlab.gnome.org/World/OpenPaperwork/pyocr
 # https://child-programmer.com/ai/ocr/python/japanese-vertical/
@@ -46,25 +47,26 @@ def kindle(destination: Path, minimum_pages: int) -> None:
 @click.option('--lang', type=str, default='eng')
 @click.option('--vertical', type=bool, default=False, is_flag=True)
 @click.option('--chapter', type=str, default=None)
-def from_file(image_file: Path, lang: str, vertical: bool, chapter: Optional[str] = None) -> None:
+@click.option('--start-page', type=int, default=None)
+@click.option('--end-page', type=int, default=None)
+def from_file(
+    image_file: Path,
+    lang: str,
+    vertical: bool,
+    chapter: Optional[str] = None,
+    start_page: Optional[int] = None,
+    end_page: Optional[int] = None,
+) -> None:
     ocr = get_ocr_tool()
-    source = Image.open(image_file)
-
-    options = {}
-    if vertical:
-        options['tesseract_layout'] = 5
-
-    cropper = Cropper(image=source, ocr=ocr)
-    cropper.remove_page_number(position='bottom')
-    if chapter is not None:
-        cropper.remove_chapter_title(position=chapter)
-
-    source = cropper.image
-    # source.save('/tmp/xmosh/cropped.png')
-
-    builder = pyocr.builders.TextBuilder(**options)
-    text = ocr.image_to_string(source, lang=lang, builder=builder)
-    print(text)
+    fi = FromImage(
+        ocr=ocr,
+        lang=lang,
+        vertical=vertical,
+        chapter=chapter,
+        start_page=start_page,
+        end_page=end_page
+    )
+    fi.read_pdf(image_file)
 
 
 @main.command()
