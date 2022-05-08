@@ -43,7 +43,8 @@ def kindle(destination: Path, minimum_pages: int) -> None:
 
 
 @main.command()
-@click.argument('image_file', type=click.Path(exists=False, dir_okay=True))
+@click.argument('image_file', type=click.Path(exists=False, dir_okay=False, path_type=Path))
+@click.argument('output', type=click.Path(exists=False, dir_okay=True, path_type=Path))
 @click.option('--lang', type=str, default='eng')
 @click.option('--vertical', type=bool, default=False, is_flag=True)
 @click.option('--chapter', type=str, default=None)
@@ -51,6 +52,7 @@ def kindle(destination: Path, minimum_pages: int) -> None:
 @click.option('--end-page', type=int, default=None)
 def from_file(
     image_file: Path,
+    output: Path,
     lang: str,
     vertical: bool,
     chapter: Optional[str] = None,
@@ -66,7 +68,7 @@ def from_file(
         start_page=start_page,
         end_page=end_page
     )
-    fi.read_pdf(image_file)
+    fi.read_pdf(image_file, output)
 
 
 @main.command()

@@ -1,4 +1,5 @@
 click
+joblib
 pdf2image
 pyautogui
 pydantic
